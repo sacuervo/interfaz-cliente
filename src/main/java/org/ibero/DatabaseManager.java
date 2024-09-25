@@ -4,7 +4,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Server {
+public class DatabaseManager {
 
     public static void main(String[] args) throws SQLException {
 
