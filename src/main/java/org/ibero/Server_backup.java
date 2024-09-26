@@ -4,7 +4,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class DatabaseManager {
+public class Server_backup {
 
     public static void main(String[] args) throws SQLException {
 
@@ -66,36 +66,28 @@ public class DatabaseManager {
         return services;
     }
 
-    public static void initServiceMenu(Connection conn, ArrayList<HashMap<String, Object>> serviceList ) throws SQLException{
-            PreparedStatement dropTable = conn.prepareStatement("DROP TABLE IF EXISTS SERVICIOS");
-            dropTable.executeUpdate();
+    public static void initServiceMenu(Connection conn, ArrayList<HashMap<String, Object>> serviceList) throws SQLException {
+        PreparedStatement dropTable = conn.prepareStatement("DROP TABLE IF EXISTS SERVICIOS");
+        dropTable.executeUpdate();
 
-            PreparedStatement createTable = conn.prepareStatement("CREATE TABLE SERVICIOS (NOMBRE TEXT, PRECIO INTEGER)");
-            createTable.executeUpdate();
+        PreparedStatement createTable = conn.prepareStatement("CREATE TABLE SERVICIOS (NOMBRE TEXT, PRECIO INTEGER)");
+        createTable.executeUpdate();
 
-            PreparedStatement populateTable = conn.prepareStatement("INSERT INTO SERVICIOS VALUES (?, ?)");
-            serviceList.forEach(service -> {
-                try {
-                    populateTable.setString(1, (String) service.get("nombre"));
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-                try {
-                    populateTable.setInt(2, (Integer) service.get("precio"));
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-                try {
-                    populateTable.executeUpdate();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+        PreparedStatement populateTable = conn.prepareStatement("INSERT INTO SERVICIOS VALUES (?, ?)");
+        serviceList.forEach(service -> {
+            try {
+                populateTable.setString(1, (String) service.get("nombre"));
+                populateTable.setInt(2, (Integer) service.get("precio"));
+                populateTable.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    public static void initServiceRequests (Connection conn) throws SQLException {
-            PreparedStatement createTable = conn.prepareStatement("CREATE TABLE IF NOT EXISTS PEDIDOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE_CLIENTE TEXT, SERVICIO TEXT, PRECIO INT, FINALIZADO INT DEFAULT 0)");
-            createTable.executeUpdate();
+    public static void initServiceRequests(Connection conn) throws SQLException {
+        PreparedStatement createTable = conn.prepareStatement("CREATE TABLE IF NOT EXISTS PEDIDOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE_CLIENTE TEXT, SERVICIO TEXT, PRECIO INT, FINALIZADO INT DEFAULT 0)");
+        createTable.executeUpdate();
     }
 
 }
