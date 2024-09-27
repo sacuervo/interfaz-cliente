@@ -42,61 +42,6 @@ public class Server {
             // Inicializar tabla para crear pedidos de clientes
             initServiceRequests(conn);
 
-            // PRUEBAS
-            // Simulación de creación de pedido en base de datos
-            // 1. Crear ArrayList<String> con nombre, servicio y precio
-//            ArrayList<String> serviceDataList = new ArrayList<>();
-//            serviceDataList.add("Santiago Cuervo");
-//            serviceDataList.add("Corte");
-//            serviceDataList.add("30");
-
-            // 2. Pasar ese ArrayList como argumento al método receiveServiceRequest. Almacenar el resultado en un HashMap
-//            HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
-
-            // 3. Pasar ese HashMap como argumento al método processServiceRequest
-//            processServiceRequest(conn, serviceRequestHash);
-//            processServiceRequest(conn, serviceRequestHash);
-//            processServiceRequest(conn, serviceRequestHash);
-
-            // 4. Finalizar un proceso processRequestFinalization()
-//            processRequestFinalization(conn, 5);
-//            processRequestFinalization(conn, 13);
-//            processRequestFinalization(conn, 19);
-
-            // 5. Revisar el estado de un servicio inquireRequestInformation()
-//            System.out.println(inquireRequestInformation(conn, 4));
-//            System.out.println(inquireRequestInformation(conn, 5));
-//            System.out.println(inquireRequestInformation(conn, 2));
-
-            // 6. Ver el estado de todos los pedidos inquireAllRequestsInformation()
-//            inquireAllRequestsInformation(conn).forEach(System.out::println);
-
-            // 7. Ver cuáles servicios ofrece la guardería
-//            inquireAllServicesInformation(conn).forEach(System.out::println);
-
-            // 8. Eliminar servicio al proveer un id
-//            deleteRequestEntry(conn, 6);
-//            deleteRequestEntry(conn, 7);
-
-            // 9. Verificar existencia del pedido verifyRequestExistence()
-//            System.out.println(verifyRequestExistence(conn, 4));
-//            System.out.println(verifyRequestExistence(conn, 10));
-
-//            // Iniciar servidor para escuchar conexiones de clientes
-//            ServerSocket serverSocket = new ServerSocket(PORT);
-//            System.out.println("Servidor iniciado en el puerto " + PORT);
-//
-//            // Esperar conexiones de clientes
-//            while (true) {
-//                // Esperar conexión
-//                Socket clientSocket = serverSocket.accept();
-//                // Notificar conexión
-//                System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
-//
-//                // Crear un nuevo hilo para manejar la conexión con cliente
-//                new ClientHandler(clientSocket, conn).start();
-//            }
-
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
@@ -375,49 +320,4 @@ public class Server {
     }
 
     // ------ FIN MÉTODOS AUXILIARES ------
-
-
-    // ------ DEFINICIÓN DE CLASES ------
-    // Clase para manejar las solicitudes de los clientes
-//    static class ClientHandler extends Thread {
-//        private Socket clientSocket;
-//        private Connection conn;
-//
-//        public ClientHandler(Socket socket, Connection conn) {
-//            this.clientSocket = socket; // El socket requiere ser cerrado de forma manual
-//            this.conn = conn;
-//        }
-//
-//        @Override
-//        public void run() {
-//            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-//                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
-//
-//                String inputLine;
-//                while ((inputLine = in.readLine()) != null) { // Leer entradas línea por línea
-//                    // MANEJO DE SOLICITUDES DEL CLIENTE
-//                    // 1. Ver servicios disponibles
-//                    // 2. Añadir solicitud de servicio
-//                    // 3. Ver estado de los servicios
-//                    // 4. Cambiar estado del servicio a completed
-//                    // 5. Salir
-//                    if (inputLine.equalsIgnoreCase("GET_SERVICES")) {
-//                        out.println(getServices());
-//                    } else if (inputLine.startsWith("ADD_REQUEST")) {
-//                        out.println("Solicitud añadida.");
-//                    } else if (inputLine.equalsIgnoreCase("EXIT")) {
-//                        break;
-//                    } else {
-//                        out.println("Comando no reconocido.");
-//                    }
-//                }
-//
-//                // l socket
-//                clientSocket.close();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//    }
-
 }
