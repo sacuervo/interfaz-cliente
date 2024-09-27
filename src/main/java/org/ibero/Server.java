@@ -53,7 +53,16 @@ public class Server {
             HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
 
             // 3. Pasar ese HashMap como argumento al método processServiceRequest
-            processServiceRequest(conn, serviceRequestHash);
+//            processServiceRequest(conn, serviceRequestHash);
+//            processServiceRequest(conn, serviceRequestHash);
+//            processServiceRequest(conn, serviceRequestHash);
+
+            // 4. Finalizar un proceso processRequestFinalization()
+            processRequestFinalization(conn, 5);
+
+            // Cerrar la conexión
+            conn.close();
+
 
 //            // Iniciar servidor para escuchar conexiones de clientes
 //            ServerSocket serverSocket = new ServerSocket(PORT);
@@ -77,7 +86,6 @@ public class Server {
     }
 
     // ------ MÉTODOS AUXILIARES ------
-
     // Creación de servicios preestablecidos de forma local. Esto se pueden modificar de manera sencilla y se pasan a la base de datos cada vez que se inicie la aplicación.
     public static ArrayList<HashMap<String, Object>> createServiceList() {
         ArrayList<HashMap<String, Object>> services = new ArrayList<>();
@@ -170,7 +178,25 @@ public class Server {
         return id;
     }
 
-    public static void processRequestFinalization() {
+    // Procesa el servicio con el id propocionado en la base de datos y cambia el valor de FINALIZADO por 1 (proporcional a TRUE en SQLite)
+    public static void processRequestFinalization(Connection conn, int serviceId) {
+
+        try {
+
+            PreparedStatement finalizeRequest = conn.prepareStatement("UPDATE PEDIDOS SET FINALIZADO = ? WHERE ID = ?");
+
+            finalizeRequest.setInt(1, 1);
+            finalizeRequest.setInt(2, serviceId);
+
+            finalizeRequest.executeUpdate();
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+    }
+
+    public static void inquireRequestState ( int serviceId){
         throw new Error("Not implemented yet");
     }
     // ------ FIN MÉTODOS AUXILIARES ------
