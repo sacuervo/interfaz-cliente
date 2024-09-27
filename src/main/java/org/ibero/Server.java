@@ -45,21 +45,23 @@ public class Server {
             // PRUEBAS
             // Simulación de creación de pedido en base de datos
             // 1. Crear ArrayList<String> con nombre, servicio y precio
-            ArrayList<String> serviceDataList = new ArrayList<>();
-            serviceDataList.add("Santiago Cuervo");
-            serviceDataList.add("Corte");
-            serviceDataList.add("30");
+//            ArrayList<String> serviceDataList = new ArrayList<>();
+//            serviceDataList.add("Santiago Cuervo");
+//            serviceDataList.add("Corte");
+//            serviceDataList.add("30");
 
             // 2. Pasar ese ArrayList como argumento al método receiveServiceRequest. Almacenar el resultado en un HashMap
-            HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
+//            HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
 
             // 3. Pasar ese HashMap como argumento al método processServiceRequest
-            processServiceRequest(conn, serviceRequestHash);
-            processServiceRequest(conn, serviceRequestHash);
-            processServiceRequest(conn, serviceRequestHash);
+//            processServiceRequest(conn, serviceRequestHash);
+//            processServiceRequest(conn, serviceRequestHash);
+//            processServiceRequest(conn, serviceRequestHash);
 
             // 4. Finalizar un proceso processRequestFinalization()
 //            processRequestFinalization(conn, 5);
+//            processRequestFinalization(conn, 13);
+//            processRequestFinalization(conn, 19);
 
             // 5. Revisar el estado de un servicio inquireRequestInformation()
 //            System.out.println(inquireRequestInformation(conn, 4));
@@ -74,6 +76,7 @@ public class Server {
 
             // 8. Eliminar servicio al proveer un id
 //            deleteRequestEntry(conn, 6);
+//            deleteRequestEntry(conn, 7);
 
             // 9. Verificar existencia del pedido verifyRequestExistence()
 //            System.out.println(verifyRequestExistence(conn, 4));
@@ -124,7 +127,7 @@ public class Server {
         return services;
     }
 
-    // Inicialización de tabla SERVICIOS en base de datos. Recibe los servicios preestablecidos y los pone en la base de datos.
+    // Inicialización de tabla SERVICIOS en base de datos. Recibe los servicios preestablecidos y los pone en la base de datos. (CRUD -> C)
     public static void initServiceMenu(Connection conn, ArrayList<HashMap<String, Object>> serviceList) throws SQLException {
         PreparedStatement dropTable = conn.prepareStatement("DROP TABLE IF EXISTS SERVICIOS");
         dropTable.executeUpdate();
@@ -150,13 +153,13 @@ public class Server {
         try {
             PreparedStatement createTable = conn.prepareStatement("CREATE TABLE IF NOT EXISTS PEDIDOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE_CLIENTE TEXT, SERVICIO TEXT, PRECIO INT, FINALIZADO INT DEFAULT 0)");
             createTable.executeUpdate();
-        } catch (SQLException ex){
+        } catch (SQLException ex) {
             ex.printStackTrace();
         }
 
     }
 
-    // Regresa string con todos los servicios de la veterinaria
+    // Regresa string con todos los servicios de la veterinaria (CRUD -> R)
     public static ArrayList<String> inquireAllServicesInformation(Connection conn) {
 
         ArrayList<String> resultArray = new ArrayList<>();
@@ -203,7 +206,7 @@ public class Server {
         return serviceRequestHash;
     }
 
-    // Procesa el HashMap con la información del pedido del cliente y la pasa a la base de datos. Regresa el id del pedido para poder buscarlo después.
+    // Procesa el HashMap con la información del pedido del cliente y la pasa a la base de datos. Regresa el id del pedido para poder buscarlo después. (CRUD -> C)
     public static int processServiceRequest(Connection conn, HashMap<String, Object> serviceRequest) {
         int id = 0;
         try {
@@ -217,7 +220,7 @@ public class Server {
 
             ResultSet generatedKeys = addServiceEntry.getGeneratedKeys();
 
-            if (generatedKeys.next()){
+            if (generatedKeys.next()) {
                 id = generatedKeys.getInt(1);
             }
 
@@ -230,57 +233,67 @@ public class Server {
         return id;
     }
 
-    // Procesa el servicio con el id propocionado en la base de datos y cambia el valor de FINALIZADO por 1 (proporcional a TRUE en SQLite)
+    // Procesa el servicio con el id propocionado en la base de datos y cambia el valor de FINALIZADO por 1 (proporcional a TRUE en SQLite) (CRUD -> U)
     public static void processRequestFinalization(Connection conn, int serviceId) {
 
-        try {
+        if (verifyRequestExistence(conn, serviceId)) { // Verificar existencia del servicio antes
+            try {
 
-            PreparedStatement finalizeRequest = conn.prepareStatement("UPDATE PEDIDOS SET FINALIZADO = ? WHERE ID = ?");
+                PreparedStatement finalizeRequest = conn.prepareStatement("UPDATE PEDIDOS SET FINALIZADO = ? WHERE ID = ?");
 
-            finalizeRequest.setInt(1, 1);
-            finalizeRequest.setInt(2, serviceId);
+                finalizeRequest.setInt(1, 1);
+                finalizeRequest.setInt(2, serviceId);
 
-            finalizeRequest.executeUpdate();
+                finalizeRequest.executeUpdate();
 
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+                System.out.println("\nServicio actualizado exitosamente.");
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            System.out.println("\nNo se ha encontrado el servicio. Por favor vuelva a intentar.");
         }
 
     }
 
-    // Regresa string toda la información de un pedido
+    // Regresa string toda la información de un pedido (CRUD -> R)
     public static String inquireRequestInformation(Connection conn, int serviceId) {
 
         String result = "";
 
-        try {
-            PreparedStatement requestStateInquiry = conn.prepareStatement("SELECT * FROM PEDIDOS WHERE ID = ?");
+        if (verifyRequestExistence(conn, serviceId)) {
+            try {
+                PreparedStatement requestStateInquiry = conn.prepareStatement("SELECT * FROM PEDIDOS WHERE ID = ?");
 
-            requestStateInquiry.setInt(1, serviceId);
+                requestStateInquiry.setInt(1, serviceId);
 
-            ResultSet rs = requestStateInquiry.executeQuery();
+                ResultSet rs = requestStateInquiry.executeQuery();
 
-            while (rs.next()) {
+                while (rs.next()) {
 
-                int id = serviceId;
-                String name = rs.getString("NOMBRE_CLIENTE");
-                String service = rs.getString("SERVICIO");
-                String cost = rs.getString("PRECIO");
-                String isComplete = (rs.getInt("FINALIZADO")) == 1 ? "Completo" : "En proceso";
+                    int id = serviceId;
+                    String name = rs.getString("NOMBRE_CLIENTE");
+                    String service = rs.getString("SERVICIO");
+                    String cost = rs.getString("PRECIO");
+                    String isComplete = (rs.getInt("FINALIZADO")) == 1 ? "Completo" : "En proceso";
 
-                result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + cost + "\nEstado: " + isComplete + "\n--------------------\n";
+                    result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + cost + "\nEstado: " + isComplete + "\n--------------------";
 
+                }
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
             }
-
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } else {
+            System.out.println("\nNo se ha encontrado el servicio. Por favor vuelva a intentar.");
         }
 
         return result;
 
     }
 
-    // Regresa ArrayList<String> con la información de todos los pedidos
+    // Regresa ArrayList<String> con la información de todos los pedidos (CRUD -> R)
     public static ArrayList<String> inquireAllRequestsInformation(Connection conn) {
 
         ArrayList<String> resultArray = new ArrayList<>();
@@ -313,28 +326,29 @@ public class Server {
 
     }
 
-    // Elimina el pedido que corresponda al id especificado
+    // Elimina el pedido que corresponda al id especificado (CRUD -> D)
     public static void deleteRequestEntry(Connection conn, int id) {
 
-        try {
+        if (verifyRequestExistence(conn, id)) {
+            try {
 
-            PreparedStatement deletionQuery = conn.prepareStatement("DELETE FROM PEDIDOS WHERE ID = ?");
+                PreparedStatement deletionQuery = conn.prepareStatement("DELETE FROM PEDIDOS WHERE ID = ?");
 
-            deletionQuery.setInt(1, id);
+                deletionQuery.setInt(1, id);
 
-            deletionQuery.executeUpdate();
+                deletionQuery.executeUpdate();
 
-            System.out.println("\nEliminación de pedido '" + id + "' exitosa.");
+                System.out.println("\nEliminación de pedido '" + id + "' exitosa.");
 
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            System.out.println("\nNo se ha encontrado el servicio. Por favor vuelva a intentar.");
         }
-
     }
 
-    ;
-
-    // Verificar existencia de pedido
+    // Verificar existencia de pedido (CRUD -> R)
     public static boolean verifyRequestExistence(Connection conn, int id) {
 
         boolean result = false;
@@ -347,7 +361,7 @@ public class Server {
 
             ResultSet rs = searchQuery.executeQuery();
 
-            if (rs.next()){
+            if (rs.next()) {
                 result = true;
             } else {
                 result = false;
