@@ -45,18 +45,18 @@ public class Server {
             // PRUEBAS
             // Simulación de creación de pedido en base de datos
             // 1. Crear ArrayList<String> con nombre, servicio y precio
-//            ArrayList<String> serviceDataList = new ArrayList<>();
-//            serviceDataList.add("Santiago Cuervo");
-//            serviceDataList.add("Corte");
-//            serviceDataList.add("30");
+            ArrayList<String> serviceDataList = new ArrayList<>();
+            serviceDataList.add("Santiago Cuervo");
+            serviceDataList.add("Corte");
+            serviceDataList.add("30");
 
             // 2. Pasar ese ArrayList como argumento al método receiveServiceRequest. Almacenar el resultado en un HashMap
-//            HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
+            HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
 
             // 3. Pasar ese HashMap como argumento al método processServiceRequest
-//            processServiceRequest(conn, serviceRequestHash);
-//            processServiceRequest(conn, serviceRequestHash);
-//            processServiceRequest(conn, serviceRequestHash);
+            processServiceRequest(conn, serviceRequestHash);
+            processServiceRequest(conn, serviceRequestHash);
+            processServiceRequest(conn, serviceRequestHash);
 
             // 4. Finalizar un proceso processRequestFinalization()
 //            processRequestFinalization(conn, 5);
@@ -76,8 +76,8 @@ public class Server {
 //            deleteRequestEntry(conn, 6);
 
             // 9. Verificar existencia del pedido verifyRequestExistence()
-            System.out.println(verifyRequestExistence(conn, 4));
-            System.out.println(verifyRequestExistence(conn, 10));
+//            System.out.println(verifyRequestExistence(conn, 4));
+//            System.out.println(verifyRequestExistence(conn, 10));
 
 //            // Iniciar servidor para escuchar conexiones de clientes
 //            ServerSocket serverSocket = new ServerSocket(PORT);
@@ -207,7 +207,7 @@ public class Server {
     public static int processServiceRequest(Connection conn, HashMap<String, Object> serviceRequest) {
         int id = 0;
         try {
-            PreparedStatement addServiceEntry = conn.prepareStatement("INSERT INTO PEDIDOS (NOMBRE_CLIENTE, SERVICIO, PRECIO, FINALIZADO) VALUES (?, ?, ?, 0)");
+            PreparedStatement addServiceEntry = conn.prepareStatement("INSERT INTO PEDIDOS (NOMBRE_CLIENTE, SERVICIO, PRECIO, FINALIZADO) VALUES (?, ?, ?, 0)", Statement.RETURN_GENERATED_KEYS);
 
             addServiceEntry.setString(1, (String) serviceRequest.get("nombre"));
             addServiceEntry.setString(2, (String) serviceRequest.get("servicio"));
@@ -215,21 +215,17 @@ public class Server {
 
             addServiceEntry.executeUpdate();
 
-            PreparedStatement retrieveServiceId = conn.prepareStatement("SELECT ID FROM PEDIDOS WHERE NOMBRE_CLIENTE = ?");
+            ResultSet generatedKeys = addServiceEntry.getGeneratedKeys();
 
-            retrieveServiceId.setString(1, (String) serviceRequest.get("nombre"));
-
-            ResultSet resultId = retrieveServiceId.executeQuery();
-
-            if (resultId.next()) {
-                id = resultId.getInt("ID");
+            if (generatedKeys.next()){
+                id = generatedKeys.getInt(1);
             }
-
-            resultId.close();
 
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+
+        System.out.println("\nSe ha creado el pedido con el ID # " + id + ".");
 
         return id;
     }
