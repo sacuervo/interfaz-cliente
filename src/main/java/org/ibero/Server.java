@@ -70,11 +70,14 @@ public class Server {
 //            inquireAllRequestsInformation(conn).forEach(System.out::println);
 
             // 7. Ver cuáles servicios ofrece la guardería
-            inquireAllServicesInformation(conn).forEach(System.out::println);
+//            inquireAllServicesInformation(conn).forEach(System.out::println);
 
-            // Cerrar la conexión
-            conn.close();
+            // 8. Eliminar servicio al proveer un id
+//            deleteRequestEntry(conn, 6);
 
+            // 9. Verificar existencia del pedido verifyRequestExistence()
+            System.out.println(verifyRequestExistence(conn, 4));
+            System.out.println(verifyRequestExistence(conn, 10));
 
 //            // Iniciar servidor para escuchar conexiones de clientes
 //            ServerSocket serverSocket = new ServerSocket(PORT);
@@ -147,7 +150,7 @@ public class Server {
         createTable.executeUpdate();
     }
 
-    // TODO: Regresa string con todos los servicios de la veterinaria
+    // Regresa string con todos los servicios de la veterinaria
     public static ArrayList<String> inquireAllServicesInformation(Connection conn) {
 
         ArrayList<String> resultArray = new ArrayList<>();
@@ -308,7 +311,53 @@ public class Server {
 
     }
 
-    // TODO: Elimina el pedido que corresponda al id especificado
+    // Elimina el pedido que corresponda al id especificado
+    public static void deleteRequestEntry(Connection conn, int id) {
+
+        try {
+
+            PreparedStatement deletionQuery = conn.prepareStatement("DELETE FROM PEDIDOS WHERE ID = ?");
+
+            deletionQuery.setInt(1, id);
+
+            deletionQuery.executeUpdate();
+
+            System.out.println("\nEliminación de pedido '" + id + "' exitosa.");
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+    }
+
+    ;
+
+    // Verificar existencia de pedido
+    public static boolean verifyRequestExistence(Connection conn, int id) {
+
+        boolean result = false;
+
+        try {
+
+            PreparedStatement searchQuery = conn.prepareStatement("SELECT * FROM PEDIDOS WHERE ID = ?");
+
+            searchQuery.setInt(1, id);
+
+            ResultSet rs = searchQuery.executeQuery();
+
+            if (rs.next()){
+                result = true;
+            } else {
+                result = false;
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return result;
+    }
+
     // ------ FIN MÉTODOS AUXILIARES ------
 
 
