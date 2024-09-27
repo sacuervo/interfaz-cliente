@@ -20,6 +20,7 @@ import java.io.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 import static org.ibero.Server_backup.initServiceMenu;
 import static org.ibero.Server_backup.initServiceRequests;
@@ -44,13 +45,13 @@ public class Server {
             // PRUEBAS
             // Simulación de creación de pedido en base de datos
             // 1. Crear ArrayList<String> con nombre, servicio y precio
-            ArrayList<String> serviceDataList = new ArrayList<>();
-            serviceDataList.add("Santiago Cuervo");
-            serviceDataList.add("Corte");
-            serviceDataList.add("30");
+//            ArrayList<String> serviceDataList = new ArrayList<>();
+//            serviceDataList.add("Santiago Cuervo");
+//            serviceDataList.add("Corte");
+//            serviceDataList.add("30");
 
             // 2. Pasar ese ArrayList como argumento al método receiveServiceRequest. Almacenar el resultado en un HashMap
-            HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
+//            HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
 
             // 3. Pasar ese HashMap como argumento al método processServiceRequest
 //            processServiceRequest(conn, serviceRequestHash);
@@ -58,7 +59,13 @@ public class Server {
 //            processServiceRequest(conn, serviceRequestHash);
 
             // 4. Finalizar un proceso processRequestFinalization()
-            processRequestFinalization(conn, 5);
+//            processRequestFinalization(conn, 5);
+
+            // 5. Revisar el estado de un servicio inquireRequestInformation()
+            System.out.println(inquireRequestInformation(conn, 4));
+            System.out.println(inquireRequestInformation(conn, 5));
+            System.out.println(inquireRequestInformation(conn, 2));
+
 
             // Cerrar la conexión
             conn.close();
@@ -196,8 +203,36 @@ public class Server {
 
     }
 
-    public static void inquireRequestState ( int serviceId){
-        throw new Error("Not implemented yet");
+    // Regresa toda la información de un pedido
+    public static String inquireRequestInformation(Connection conn, int serviceId) {
+
+        String result = "";
+
+        try {
+            PreparedStatement requestStateInquiry = conn.prepareStatement("SELECT * FROM PEDIDOS WHERE ID = ?");
+
+            requestStateInquiry.setInt(1, serviceId);
+
+            ResultSet rs = requestStateInquiry.executeQuery();
+
+            while(rs.next()){
+
+                int id = serviceId;
+                String name = rs.getString("NOMBRE_CLIENTE");
+                String service = rs.getString("SERVICIO");
+                String cost = rs.getString("PRECIO");
+                String isComplete = (rs.getInt("FINALIZADO")) == 1 ? "Completo" : "En proceso";
+
+                result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: " + cost + "\nEstado: " + isComplete + "\n--------------------\n";
+
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return result;
+
     }
     // ------ FIN MÉTODOS AUXILIARES ------
 
