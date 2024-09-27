@@ -146,8 +146,14 @@ public class Server {
 
     // Inicialización de tabla que incluye pedidos de servicios de clientes en base de datos
     public static void initServiceRequests(Connection conn) throws SQLException {
-        PreparedStatement createTable = conn.prepareStatement("CREATE TABLE IF NOT EXISTS PEDIDOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE_CLIENTE TEXT, SERVICIO TEXT, PRECIO INT, FINALIZADO INT DEFAULT 0)");
-        createTable.executeUpdate();
+
+        try {
+            PreparedStatement createTable = conn.prepareStatement("CREATE TABLE IF NOT EXISTS PEDIDOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE_CLIENTE TEXT, SERVICIO TEXT, PRECIO INT, FINALIZADO INT DEFAULT 0)");
+            createTable.executeUpdate();
+        } catch (SQLException ex){
+            ex.printStackTrace();
+        }
+
     }
 
     // Regresa string con todos los servicios de la veterinaria
