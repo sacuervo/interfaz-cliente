@@ -98,10 +98,10 @@ public class Server {
             PreparedStatement dropTable = conn.prepareStatement("DROP TABLE IF EXISTS SERVICIOS");
             dropTable.executeUpdate();
 
-            PreparedStatement createTable = conn.prepareStatement("CREATE TABLE SERVICIOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE TEXT, PRECIO INTEGER)");
+            PreparedStatement createTable = conn.prepareStatement("CREATE TABLE IF NOT EXISTS SERVICIOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE TEXT, PRECIO INTEGER)");
             createTable.executeUpdate();
 
-            PreparedStatement populateTable = conn.prepareStatement("INSERT INTO SERVICIOS VALUES (?, ?)");
+            PreparedStatement populateTable = conn.prepareStatement("INSERT INTO SERVICIOS (NOMBRE, PRECIO) VALUES (?, ?)");
             serviceList.forEach(service -> {
                 try {
                     populateTable.setString(1, (String) service.get("nombre"));
@@ -144,9 +144,9 @@ public class Server {
             while (rs.next()) {
 
                 String name = rs.getString("NOMBRE");
-                String cost = rs.getString("PRECIO");
+                String price = rs.getString("PRECIO");
 
-                result += "\n--- Servicio # " + contador + " ---\nServicio: " + name + "\nPrecio: $" + cost + "\n--------------------\n";
+                result += "\n--- Servicio # " + contador + " ---\nServicio: " + name + "\nPrecio: $" + price + "\n--------------------\n";
 
                 contador++;
 
@@ -159,38 +159,57 @@ public class Server {
 
     }
 
-    // TODO: Regresa ArrayList<String> con la información de un servicio seleccionado
-//    public static ArrayList<String> grabServiceInformation(Connection conn){
-//
-//        try {
-//            PreparedStatement grabServiceStatement = "SELECT * FROM SERVICIOS WHERE "
-//        } catch (SQLException ex){
-//            ex.printStackTrace();
-//        }
-//
-//    }
+    // Regresa HashMap<String, Object> con la información de un servicio seleccionado
+    public static HashMap<String, Object> grabServiceInformation(Connection conn, int id){
 
-    // Procesa la información que recibe por parte del cliente para crear un HashMap con la información del servicio
+        HashMap<String, Object> result = new HashMap<>();
+
+        if (verifyServiceExistence(conn, id)) {
+            try {
+                PreparedStatement grabServiceStatement = conn.prepareStatement("SELECT * FROM SERVICIOS WHERE ID = ?");
+
+                grabServiceStatement.setInt(1, id);
+
+                ResultSet rs = grabServiceStatement.executeQuery();
+
+                while (rs.next()) {
+                    result.put("service", rs.getString("NOMBRE"));
+                    result.put("price", rs.getInt("PRECIO"));
+                }
+
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+        } else {
+            result.put("response", "No se ha encontrado el servicio. Por favor vuelva a intentar");
+        }
+
+        return result;
+    }
+
+    // TODO: (REMOVE) Procesa la información que recibe por parte del cliente para crear un HashMap con la información del servicio
     public static HashMap<String, Object> receiveServiceRequest(ArrayList<String> serviceInfo) {
 
         HashMap<String, Object> serviceRequestHash = new HashMap<>();
 
-        serviceRequestHash.put("nombre", serviceInfo.get(0));
-        serviceRequestHash.put("servicio", serviceInfo.get(1));
-        serviceRequestHash.put("precio", serviceInfo.get(2));
+        serviceRequestHash.put("name", serviceInfo.get(0));
+        serviceRequestHash.put("service", serviceInfo.get(1));
+        serviceRequestHash.put("price", serviceInfo.get(2));
 
         return serviceRequestHash;
     }
 
     // Procesa el HashMap con la información del pedido del cliente y la pasa a la base de datos. Regresa el id del pedido para poder buscarlo después. (CRUD -> C)
-    public static int processServiceRequest(Connection conn, HashMap<String, Object> serviceRequest) {
+    public static String processServiceRequest(Connection conn, HashMap<String, Object> serviceRequest) {
         int id = 0;
         try {
             PreparedStatement addServiceEntry = conn.prepareStatement("INSERT INTO PEDIDOS (NOMBRE_CLIENTE, SERVICIO, PRECIO, FINALIZADO) VALUES (?, ?, ?, 0)", Statement.RETURN_GENERATED_KEYS);
 
-            addServiceEntry.setString(1, (String) serviceRequest.get("nombre"));
-            addServiceEntry.setString(2, (String) serviceRequest.get("servicio"));
-            addServiceEntry.setInt(3, Integer.parseInt((String) serviceRequest.get("precio")));
+            addServiceEntry.setString(1, (String) serviceRequest.get("name"));
+            addServiceEntry.setString(2, (String) serviceRequest.get("service"));
+            addServiceEntry.setInt(3, Integer.parseInt((String) serviceRequest.get("price")));
 
             addServiceEntry.executeUpdate();
 
@@ -204,9 +223,7 @@ public class Server {
             ex.printStackTrace();
         }
 
-        System.out.println("\nSe ha creado el pedido con el ID # " + id + ".");
-
-        return id;
+        return "\nSe ha creado el pedido con el ID # " + id + ".";
     }
 
     // Procesa el servicio con el id propocionado en la base de datos y cambia el valor de FINALIZADO por 1 (proporcional a TRUE en SQLite) (CRUD -> U)
@@ -251,10 +268,10 @@ public class Server {
                     int id = serviceId;
                     String name = rs.getString("NOMBRE_CLIENTE");
                     String service = rs.getString("SERVICIO");
-                    String cost = rs.getString("PRECIO");
+                    String price = rs.getString("PRECIO");
                     String isComplete = (rs.getInt("FINALIZADO")) == 1 ? "Completo" : "En proceso";
 
-                    result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + cost + "\nEstado: " + isComplete + "\n--------------------";
+                    result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + price + "\nEstado: " + isComplete + "\n--------------------";
 
                 }
 
@@ -286,10 +303,10 @@ public class Server {
                 int id = rs.getInt("ID");
                 String name = rs.getString("NOMBRE_CLIENTE");
                 String service = rs.getString("SERVICIO");
-                String cost = rs.getString("PRECIO");
+                String price = rs.getString("PRECIO");
                 String isComplete = (rs.getInt("FINALIZADO")) == 1 ? "Completo" : "En proceso";
 
-                result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + cost + "\nEstado: " + isComplete + "\n--------------------";
+                result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + price + "\nEstado: " + isComplete + "\n--------------------";
 
                 resultArray.add(result);
 
@@ -350,6 +367,32 @@ public class Server {
         return result;
     }
 
+    // Verificar existencia de servicio (CRUD -> R)
+    public static boolean verifyServiceExistence(Connection conn, int id) {
+
+        boolean result = false;
+
+        try {
+
+            PreparedStatement searchQuery = conn.prepareStatement("SELECT * FROM SERVICIOS WHERE ID = ?");
+
+            searchQuery.setInt(1, id);
+
+            ResultSet rs = searchQuery.executeQuery();
+
+            if (rs.next()) {
+                result = true;
+            } else {
+                result = false;
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return result;
+    }
+
     // ------ FIN MÉTODOS AUXILIARES (MANEJO BASE DATOS) ------
 
     // ------ MÉTODOS AUXILIARES (FUNCIONAMIENTO SERVIDOR) ------
@@ -377,7 +420,7 @@ public class Server {
         }
     }
 
-    // Función para procesar entrada de cliente y devolver salida
+    // TODO: Función para procesar entrada de cliente y devolver salida
     private static String processInput(String input, Connection conn) {
         // Lógica para procesar el input
         System.out.println(input);
@@ -391,7 +434,14 @@ public class Server {
             case "showservices":
                 return inquireAllServicesInformation(conn);
             case "storeservice":
-                return "a\nb" + "\nc\nd";
+                // Verificar existencia del número de servicio que ingresa el usuario
+                if (verifyServiceExistence(conn, Integer.parseInt(tokens[1]))){
+                    HashMap<String, Object> requestHash = grabServiceInformation(conn, Integer.parseInt(tokens[1]));
+                    requestHash.put("name", tokens[2]);
+                    processServiceRequest(conn, requestHash);
+                } else {
+                    return (String) grabServiceInformation(conn, Integer.parseInt((tokens[1]))).get("response");
+                };
             case "exit":
                 return "Desconectando...";
             default:
