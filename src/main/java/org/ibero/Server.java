@@ -15,19 +15,14 @@
 
 package org.ibero;
 
-import java.net.*;
-import java.io.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Set;
+import java.io.*;
+import java.net.*;
 
-import static org.ibero.Server_backup.initServiceMenu;
-import static org.ibero.Server_backup.initServiceRequests;
 
 public class Server {
-
-    private static final int PORT = 12345; // Puerto del servidor
 
     public static void main(String[] args) throws SQLException {
 
@@ -49,6 +44,7 @@ public class Server {
     }
 
     // ------ MÉTODOS AUXILIARES ------
+    //
     // Creación de servicios preestablecidos de forma local. Esto se pueden modificar de manera sencilla y se pasan a la base de datos cada vez que se inicie la aplicación.
     public static ArrayList<HashMap<String, Object>> createServiceList() {
         ArrayList<HashMap<String, Object>> services = new ArrayList<>();
