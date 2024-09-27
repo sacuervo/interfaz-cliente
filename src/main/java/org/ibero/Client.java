@@ -4,7 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class Cliente {
+public class Client {
     public static void main(String[] args) {
         Socket socket = null;
         PrintWriter out = null;
@@ -23,7 +23,7 @@ public class Cliente {
 
             String userInput = "";
             String option;
-            String responseLine; // Funciona como un contenedor de la línea actual de la respuesta
+            String responseLine = ""; // Funciona como un contenedor de la línea actual de la respuesta
 
             do {
                 // Mostrar menú
@@ -42,16 +42,20 @@ public class Cliente {
                         userInput = option;
                         break;
                     case "2":
-                        out.println("ver servicios");
+                        // Solicitar String con los servicios al servidor (mostrarservicios)
+                        out.println("showservices");
 
-                        System.out.println(in.readLine());
+                        // Mostrar servicios en consola
+                        printServerResponse(in, responseLine);
 
-                        out.println("cosa2");
+                        // TODO: Pedir a usuario selección de un servicio
+                        System.out.println("Por favor seleccione el servicio que desea tomar (1 - 3): ");
 
-                        while ((responseLine = in.readLine()) != null && !responseLine.equals("END")) {
-                            System.out.println(responseLine);
-                        }; // Imprimir respuesta con saltos de línea. Mientras que el contenedor no sea nulo o almacene el código estandar "END", significa que hay contenido en la respuesta por leer
+                        // TODO: Mandar a usuario selección de servicio (seleccionservicio)
 
+                        // TODO: Pedir a usuario su nombre
+                        // TODO: Mandar a servidor nombre del usuario (nombreusuario)
+                        // TODO: Mostrar respuesta del servidor
                         break;
                     case "3":
                         System.out.print("Ingrese la cadena a convertir a minúsculas: ");
@@ -65,13 +69,12 @@ public class Cliente {
                         userInput = "";
                         break;
                 }
-
-                if (!userInput.isEmpty()) {
-                    // Enviar el mensaje al servidor
-                    out.println(userInput);
-                    // Leer la respuesta del servidor
-                    System.out.println("Respuesta del servidor: " + in.readLine());
-                }
+//                if (!userInput.isEmpty()) {
+//                    // Enviar el mensaje al servidor
+//                    out.println(userInput);
+//                    // Leer la respuesta del servidor
+//                    System.out.println("Respuesta del servidor: " + in.readLine());
+//                }
             } while (!"4".equals(option));
 
             System.out.println("Desconectado del servidor.");
@@ -91,5 +94,19 @@ public class Cliente {
                 e.printStackTrace();
             }
         }
+    }
+
+
+    // Imprimir respuesta con saltos de línea. Mientras que el contenedor no sea nulo o almacene el código estandar "END", significa que hay contenido en la respuesta por leer
+    static void printServerResponse(BufferedReader in, String responseLine) {
+
+        try {
+            while ((responseLine = in.readLine()) != null && !responseLine.equals("END")) {
+                System.out.println(responseLine);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
     }
 }

@@ -1,4 +1,4 @@
-/* TODO:
+package org.ibero;/* TODO:
     1. Base de datos:
         - Agregar menú de servicios -> createServiceList() local,  initServiceMenu() db
         - Crear tabla para almacenar pedidos de clientes
@@ -13,8 +13,6 @@
         - Dar formato a respuestas del servidor por medio de funciones independientes para enviar respuestas al cliente
  */
 
-package org.ibero;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +23,9 @@ import java.net.*;
 public class Server {
 
     public static void main(String[] args) throws SQLException {
+
+        ServerSocket serverSocket = null;
+        Socket clientSocket = null;
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:src/main/java/data/database.db")) { // Try con recursos para cerrar automáticamente la conexión
 
@@ -37,14 +38,37 @@ public class Server {
             // Inicializar tabla para crear pedidos de clientes
             initServiceRequests(conn);
 
-        } catch (SQLException ex) {
+            // Iniciar el servidor en el puerto 9999
+            serverSocket = new ServerSocket(9999);
+            System.out.println("Servidor iniciado y esperando conexiones...");
+
+            while (true) {
+                // Esperar una conexión del cliente
+                clientSocket = serverSocket.accept();
+                System.out.println("Cliente conectado.");
+
+                // Crear un manejador de cliente para procesar la conexión
+                handleClient(clientSocket, conn);
+
+                // Cerrar la conexión con el cliente después de manejar solicitudes
+                clientSocket.close();
+                System.out.println("Cliente desconectado.");
+            }
+        } catch (SQLException | IOException ex) {
             ex.printStackTrace();
+        } finally { // Finally para cerrar el socket del servidor
+            try {
+                if (serverSocket != null) {
+                    serverSocket.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
     }
 
-    // ------ MÉTODOS AUXILIARES ------
-    //
+    // ------ MÉTODOS AUXILIARES  (MANEJO BASE DATOS) ------
     // Creación de servicios preestablecidos de forma local. Esto se pueden modificar de manera sencilla y se pasan a la base de datos cada vez que se inicie la aplicación.
     public static ArrayList<HashMap<String, Object>> createServiceList() {
         ArrayList<HashMap<String, Object>> services = new ArrayList<>();
@@ -69,27 +93,31 @@ public class Server {
     }
 
     // Inicialización de tabla SERVICIOS en base de datos. Recibe los servicios preestablecidos y los pone en la base de datos. (CRUD -> C)
-    public static void initServiceMenu(Connection conn, ArrayList<HashMap<String, Object>> serviceList) throws SQLException {
-        PreparedStatement dropTable = conn.prepareStatement("DROP TABLE IF EXISTS SERVICIOS");
-        dropTable.executeUpdate();
+    public static void initServiceMenu(Connection conn, ArrayList<HashMap<String, Object>> serviceList) {
+        try {
+            PreparedStatement dropTable = conn.prepareStatement("DROP TABLE IF EXISTS SERVICIOS");
+            dropTable.executeUpdate();
 
-        PreparedStatement createTable = conn.prepareStatement("CREATE TABLE SERVICIOS (NOMBRE TEXT, PRECIO INTEGER)");
-        createTable.executeUpdate();
+            PreparedStatement createTable = conn.prepareStatement("CREATE TABLE SERVICIOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE TEXT, PRECIO INTEGER)");
+            createTable.executeUpdate();
 
-        PreparedStatement populateTable = conn.prepareStatement("INSERT INTO SERVICIOS VALUES (?, ?)");
-        serviceList.forEach(service -> {
-            try {
-                populateTable.setString(1, (String) service.get("nombre"));
-                populateTable.setInt(2, (Integer) service.get("precio"));
-                populateTable.executeUpdate();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
+            PreparedStatement populateTable = conn.prepareStatement("INSERT INTO SERVICIOS VALUES (?, ?)");
+            serviceList.forEach(service -> {
+                try {
+                    populateTable.setString(1, (String) service.get("nombre"));
+                    populateTable.setInt(2, (Integer) service.get("precio"));
+                    populateTable.executeUpdate();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
     // Inicialización de tabla que incluye pedidos de servicios de clientes en base de datos
-    public static void initServiceRequests(Connection conn) throws SQLException {
+    public static void initServiceRequests(Connection conn) {
 
         try {
             PreparedStatement createTable = conn.prepareStatement("CREATE TABLE IF NOT EXISTS PEDIDOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE_CLIENTE TEXT, SERVICIO TEXT, PRECIO INT, FINALIZADO INT DEFAULT 0)");
@@ -101,9 +129,9 @@ public class Server {
     }
 
     // Regresa string con todos los servicios de la veterinaria (CRUD -> R)
-    public static ArrayList<String> inquireAllServicesInformation(Connection conn) {
+    public static String inquireAllServicesInformation(Connection conn) {
 
-        ArrayList<String> resultArray = new ArrayList<>();
+        String result = "";
 
         try {
 
@@ -115,14 +143,10 @@ public class Server {
 
             while (rs.next()) {
 
-                String result = "";
-
                 String name = rs.getString("NOMBRE");
                 String cost = rs.getString("PRECIO");
 
-                result = "\n--- Servicio # " + contador + " ---\nServicio: " + name + "\nPrecio: $" + cost + "\n--------------------";
-
-                resultArray.add(result);
+                result += "\n--- Servicio # " + contador + " ---\nServicio: " + name + "\nPrecio: $" + cost + "\n--------------------\n";
 
                 contador++;
 
@@ -131,9 +155,20 @@ public class Server {
             ex.printStackTrace();
         }
 
-        return resultArray;
+        return result;
 
     }
+
+    // TODO: Regresa ArrayList<String> con la información de un servicio seleccionado
+//    public static ArrayList<String> grabServiceInformation(Connection conn){
+//
+//        try {
+//            PreparedStatement grabServiceStatement = "SELECT * FROM SERVICIOS WHERE "
+//        } catch (SQLException ex){
+//            ex.printStackTrace();
+//        }
+//
+//    }
 
     // Procesa la información que recibe por parte del cliente para crear un HashMap con la información del servicio
     public static HashMap<String, Object> receiveServiceRequest(ArrayList<String> serviceInfo) {
@@ -315,5 +350,54 @@ public class Server {
         return result;
     }
 
-    // ------ FIN MÉTODOS AUXILIARES ------
+    // ------ FIN MÉTODOS AUXILIARES (MANEJO BASE DATOS) ------
+
+    // ------ MÉTODOS AUXILIARES (FUNCIONAMIENTO SERVIDOR) ------
+    // Método para manejar la conexión del cliente
+    private static void handleClient(Socket clientSocket, Connection conn) throws IOException {
+        // Flujo de entrada para recibir mensajes del cliente
+        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        // Flujo de salida para enviar mensajes al cliente
+        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+        String inputLine;
+        // Leer mensajes del cliente hasta que se envíe exit
+        while ((inputLine = in.readLine()) != null) {
+            System.out.println("Mensaje del cliente: " + inputLine);
+
+            // Procesar la entrada del cliente
+            String response = processInput(inputLine, conn);
+
+            // Enviar la respuesta al cliente
+            out.println(response);
+
+            if (inputLine.equalsIgnoreCase("exit")) {
+                break;
+            }
+        }
+    }
+
+    // Función para procesar entrada de cliente y devolver salida
+    private static String processInput(String input, Connection conn) {
+        // Lógica para procesar el input
+        System.out.println(input);
+        String[] tokens = input.split(" "); // Se divide el contenido de la entrada para que la primera palabra del comando y el resto sean argumentos.
+        String command = tokens[0].toLowerCase();
+        for (int i = 0; i < tokens.length; i++) {
+            System.out.println(tokens[i]);
+        }
+
+        switch (command) {
+            case "showservices":
+                return inquireAllServicesInformation(conn);
+            case "storeservice":
+                return "a\nb" + "\nc\nd";
+            case "exit":
+                return "Desconectando...";
+            default:
+                return "Comando no reconocido.";
+        }
+    }
+
+    // ------ FIN MÉTODOS AUXILIARES (FUNCIONAMIENTO SERVIDOR) ------
 }
