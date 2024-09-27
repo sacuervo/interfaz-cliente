@@ -1,3 +1,17 @@
+/* TODO:
+    1. Base de datos:
+        - Agregar menú de servicios -> createServiceList() local,  initServiceMenu() db
+        - Crear tabla para almacenar pedidos de clientes
+        - Implementar adición de pedido en función independiente
+        - Implementar finalización de pedido en función independiente
+    2. Cliente:
+        - Crear menú principal
+        - Mandar mensajes al servidor según las opciones que se seleccionen
+        - Imprimir mensaje según respuesta que se reciba del servidor
+    3. Servidor:
+        - Atar cada mensaje del cliente a una operación con el servidor
+        - Dar formato a respuestas del servidor por medio de funciones independientes para enviar respuestas al cliente
+ */
 
 package org.ibero;
 
@@ -27,6 +41,20 @@ public class Server {
             // Inicializar tabla para crear pedidos de clientes
             initServiceRequests(conn);
 
+            // PRUEBAS
+            // Simulación de creación de pedido en base de datos
+            // 1. Crear ArrayList<String> con nombre, servicio y precio
+            ArrayList<String> serviceDataList = new ArrayList<>();
+            serviceDataList.add("Santiago Cuervo");
+            serviceDataList.add("Corte");
+            serviceDataList.add("30");
+
+            // 2. Pasar ese ArrayList como argumento al método receiveServiceRequest. Almacenar el resultado en un HashMap
+            HashMap<String, Object> serviceRequestHash = receiveServiceRequest(serviceDataList);
+
+            // 3. Pasar ese HashMap como argumento al método processServiceRequest
+            processServiceRequest(conn, serviceRequestHash);
+
 //            // Iniciar servidor para escuchar conexiones de clientes
 //            ServerSocket serverSocket = new ServerSocket(PORT);
 //            System.out.println("Servidor iniciado en el puerto " + PORT);
@@ -42,7 +70,7 @@ public class Server {
 //                new ClientHandler(clientSocket, conn).start();
 //            }
 
-        } catch (SQLException | IOException ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
         }
 
@@ -98,151 +126,97 @@ public class Server {
         PreparedStatement createTable = conn.prepareStatement("CREATE TABLE IF NOT EXISTS PEDIDOS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NOMBRE_CLIENTE TEXT, SERVICIO TEXT, PRECIO INT, FINALIZADO INT DEFAULT 0)");
         createTable.executeUpdate();
     }
+
+    // Procesa la información que recibe por parte del cliente para crear un HashMap con la información del servicio
+    public static HashMap<String, Object> receiveServiceRequest(ArrayList<String> serviceInfo) {
+
+        HashMap<String, Object> serviceRequestHash = new HashMap<>();
+
+        serviceRequestHash.put("nombre", serviceInfo.get(0));
+        serviceRequestHash.put("servicio", serviceInfo.get(1));
+        serviceRequestHash.put("precio", serviceInfo.get(2));
+
+        return serviceRequestHash;
+    }
+
+    // Procesa el HashMap con la información del pedido del cliente y la pasa a la base de datos. Regresa el id del pedido para poder buscarlo después.
+    public static int processServiceRequest(Connection conn, HashMap<String, Object> serviceRequest) {
+        int id = 0;
+        try {
+            PreparedStatement addServiceEntry = conn.prepareStatement("INSERT INTO PEDIDOS (NOMBRE_CLIENTE, SERVICIO, PRECIO, FINALIZADO) VALUES (?, ?, ?, 0)");
+
+            addServiceEntry.setString(1, (String) serviceRequest.get("nombre"));
+            addServiceEntry.setString(2, (String) serviceRequest.get("servicio"));
+            addServiceEntry.setInt(3, Integer.parseInt((String) serviceRequest.get("precio")));
+
+            addServiceEntry.executeUpdate();
+
+            PreparedStatement retrieveServiceId = conn.prepareStatement("SELECT ID FROM PEDIDOS WHERE NOMBRE_CLIENTE = ?");
+
+            retrieveServiceId.setString(1, (String) serviceRequest.get("nombre"));
+
+            ResultSet resultId = retrieveServiceId.executeQuery();
+
+            if (resultId.next()) {
+                id = resultId.getInt("ID");
+            }
+
+            resultId.close();
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return id;
+    }
+
+    public static void processRequestFinalization() {
+        throw new Error("Not implemented yet");
+    }
     // ------ FIN MÉTODOS AUXILIARES ------
 
 
     // ------ DEFINICIÓN DE CLASES ------
     // Clase para manejar las solicitudes de los clientes
-    static class ClientHandler extends Thread {
-        private Socket clientSocket;
-        private Connection conn;
+//    static class ClientHandler extends Thread {
+//        private Socket clientSocket;
+//        private Connection conn;
+//
+//        public ClientHandler(Socket socket, Connection conn) {
+//            this.clientSocket = socket; // El socket requiere ser cerrado de forma manual
+//            this.conn = conn;
+//        }
+//
+//        @Override
+//        public void run() {
+//            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+//                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+//
+//                String inputLine;
+//                while ((inputLine = in.readLine()) != null) { // Leer entradas línea por línea
+//                    // MANEJO DE SOLICITUDES DEL CLIENTE
+//                    // 1. Ver servicios disponibles
+//                    // 2. Añadir solicitud de servicio
+//                    // 3. Ver estado de los servicios
+//                    // 4. Cambiar estado del servicio a completed
+//                    // 5. Salir
+//                    if (inputLine.equalsIgnoreCase("GET_SERVICES")) {
+//                        out.println(getServices());
+//                    } else if (inputLine.startsWith("ADD_REQUEST")) {
+//                        out.println("Solicitud añadida.");
+//                    } else if (inputLine.equalsIgnoreCase("EXIT")) {
+//                        break;
+//                    } else {
+//                        out.println("Comando no reconocido.");
+//                    }
+//                }
+//
+//                // l socket
+//                clientSocket.close();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
 
-        public ClientHandler(Socket socket, Connection conn) {
-            this.clientSocket = socket; // El socket requiere ser cerrado de forma manual
-            this.conn = conn;
-        }
-
-        @Override
-        public void run() {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
-
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) { // Leer entradas línea por línea
-                    // MANEJO DE SOLICITUDES DEL CLIENTE
-                    // 1. Ver servicios disponibles
-                    // 2. Añadir solicitud de servicio
-                    // 3. Ver estado de los servicios
-                    // 4. Cambiar estado del servicio a completed
-                    // 5. Salir
-                    if (inputLine.equalsIgnoreCase("GET_SERVICES")) {
-                        out.println(getServices());
-                    } else if (inputLine.startsWith("ADD_REQUEST")) {
-                        out.println("Solicitud añadida.");
-                    } else if (inputLine.equalsIgnoreCase("EXIT")) {
-                        break;
-                    } else {
-                        out.println("Comando no reconocido.");
-                    }
-                }
-
-                // l socket
-                clientSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    // ------ FIN DEFINICIÓN DE CLASES ------
-    // Clase de servicios disponibles
-    class Service {
-        private String name;
-        private int price;
-
-        public Service(String name, int price){
-            this.name = name;
-            this.price = price;
-        }
-
-        public String getNombre() {
-            return name;
-        }
-
-        public void setNombre(String name) {
-            this.name = name;
-        }
-
-        public int getPrice() {
-            return price;
-        }
-
-        public void setPrice(int price) {
-            this.price = price;
-        }
-
-        @Override
-        public String toString() {
-            return "Servicio{" +
-                    "Nombre: '" + name + '\'' +
-                    ", Costo: " + price +
-                    '}';
-        }
-    }
-
-    // Clase de pedidos
-    class ServiceRequest {
-        private int id; // El id será autoincrementable
-        private static int counter = 0;
-        private String clientName;
-        private String serviceName;
-        private int price;
-        private boolean completed;
-
-        public ServiceRequest (String clientName, String serviceName, int price, boolean completed){
-            counter++;
-            this.id = counter;
-            this.clientName = clientName;
-            this.serviceName = serviceName;
-            this.price = price;
-            this.completed = completed;
-        }
-
-        public static int getId() {
-            return id;
-        }
-
-        public String getNombreCliente() {
-            return clientName;
-        }
-
-        public void setNombreCliente(String clientName) {
-            this.clientName = clientName;
-        }
-
-        public String getNombreServicio() {
-            return serviceName;
-        }
-
-        public void setNombreServicio(String serviceName) {
-            this.serviceName = serviceName;
-        }
-
-        public int getPrecio() {
-            return price;
-        }
-
-        public void setPrecio(int price) {
-            this.price = price;
-        }
-
-        public boolean isFinalizado() {
-            return completed;
-        }
-
-        public void setFinalizado(boolean completed) {
-            this.completed = completed;
-        }
-
-        @Override
-        public String toString() {
-            return "Pedido {" +
-                    "ID: " + id + '\'' +
-                    "Nombre Cliente: '" + clientName + '\'' +
-                    ", Servicio: '" + serviceName + '\'' +
-                    ", Costo: " + price +
-                    ", Finalizado: " + completed +
-                    '}';
-        }
-    }
 }
