@@ -62,10 +62,15 @@ public class Server {
 //            processRequestFinalization(conn, 5);
 
             // 5. Revisar el estado de un servicio inquireRequestInformation()
-            System.out.println(inquireRequestInformation(conn, 4));
-            System.out.println(inquireRequestInformation(conn, 5));
-            System.out.println(inquireRequestInformation(conn, 2));
+//            System.out.println(inquireRequestInformation(conn, 4));
+//            System.out.println(inquireRequestInformation(conn, 5));
+//            System.out.println(inquireRequestInformation(conn, 2));
 
+            // 6. Ver el estado de todos los pedidos inquireAllRequestsInformation()
+//            inquireAllRequestsInformation(conn).forEach(System.out::println);
+
+            // 7. Ver cuáles servicios ofrece la guardería
+            inquireAllServicesInformation(conn).forEach(System.out::println);
 
             // Cerrar la conexión
             conn.close();
@@ -142,6 +147,41 @@ public class Server {
         createTable.executeUpdate();
     }
 
+    // TODO: Regresa string con todos los servicios de la veterinaria
+    public static ArrayList<String> inquireAllServicesInformation(Connection conn) {
+
+        ArrayList<String> resultArray = new ArrayList<>();
+
+        try {
+
+            PreparedStatement retrieveAllEntries = conn.prepareStatement("SELECT * FROM SERVICIOS");
+
+            ResultSet rs = retrieveAllEntries.executeQuery();
+
+            int contador = 1;
+
+            while (rs.next()) {
+
+                String result = "";
+
+                String name = rs.getString("NOMBRE");
+                String cost = rs.getString("PRECIO");
+
+                result = "\n--- Servicio # " + contador + " ---\nServicio: " + name + "\nPrecio: $" + cost + "\n--------------------";
+
+                resultArray.add(result);
+
+                contador++;
+
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return resultArray;
+
+    }
+
     // Procesa la información que recibe por parte del cliente para crear un HashMap con la información del servicio
     public static HashMap<String, Object> receiveServiceRequest(ArrayList<String> serviceInfo) {
 
@@ -203,7 +243,7 @@ public class Server {
 
     }
 
-    // Regresa toda la información de un pedido
+    // Regresa string toda la información de un pedido
     public static String inquireRequestInformation(Connection conn, int serviceId) {
 
         String result = "";
@@ -215,7 +255,7 @@ public class Server {
 
             ResultSet rs = requestStateInquiry.executeQuery();
 
-            while(rs.next()){
+            while (rs.next()) {
 
                 int id = serviceId;
                 String name = rs.getString("NOMBRE_CLIENTE");
@@ -223,7 +263,7 @@ public class Server {
                 String cost = rs.getString("PRECIO");
                 String isComplete = (rs.getInt("FINALIZADO")) == 1 ? "Completo" : "En proceso";
 
-                result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: " + cost + "\nEstado: " + isComplete + "\n--------------------\n";
+                result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + cost + "\nEstado: " + isComplete + "\n--------------------\n";
 
             }
 
@@ -234,6 +274,41 @@ public class Server {
         return result;
 
     }
+
+    // Regresa ArrayList<String> con la información de todos los pedidos
+    public static ArrayList<String> inquireAllRequestsInformation(Connection conn) {
+
+        ArrayList<String> resultArray = new ArrayList<>();
+
+        try {
+            PreparedStatement retrieveAllEntries = conn.prepareStatement("SELECT * FROM PEDIDOS");
+
+            ResultSet rs = retrieveAllEntries.executeQuery();
+
+            while (rs.next()) {
+
+                String result = "";
+
+                int id = rs.getInt("ID");
+                String name = rs.getString("NOMBRE_CLIENTE");
+                String service = rs.getString("SERVICIO");
+                String cost = rs.getString("PRECIO");
+                String isComplete = (rs.getInt("FINALIZADO")) == 1 ? "Completo" : "En proceso";
+
+                result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + cost + "\nEstado: " + isComplete + "\n--------------------";
+
+                resultArray.add(result);
+
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return resultArray;
+
+    }
+
+    // TODO: Elimina el pedido que corresponda al id especificado
     // ------ FIN MÉTODOS AUXILIARES ------
 
 
