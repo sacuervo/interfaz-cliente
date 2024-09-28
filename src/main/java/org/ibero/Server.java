@@ -23,9 +23,7 @@ import java.net.*;
 public class Server {
 
     public static void main(String[] args) throws SQLException {
-
         ServerSocket serverSocket = null;
-        Socket clientSocket = null;
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:src/main/java/data/database.db")) { // Try con recursos para cerrar automáticamente la conexión
 
@@ -41,22 +39,32 @@ public class Server {
             // Iniciar el servidor en el puerto 9999
             serverSocket = new ServerSocket(9999);
 
-            // Configurar tiempo de espera para operaciones en socket del servidor
-            serverSocket.setSoTimeout(30000);
-
             System.out.println("Servidor iniciado y esperando conexiones...");
 
             while (true) {
-                // Esperar una conexión del cliente
-                clientSocket = serverSocket.accept();
-                System.out.println("Cliente conectado.");
+                try {
+                    // Esperar una conexión del cliente
+                    Socket clientSocket = serverSocket.accept();
+                    System.out.println("Cliente conectado.");
 
-                // Crear un manejador de cliente para procesar la conexión
-                handleClient(clientSocket, conn);
-
-                // Cerrar la conexión con el cliente después de manejar solicitudes
-                clientSocket.close();
-                System.out.println("Cliente desconectado.");
+                    // Crear un nuevo hilo para manejar la conexión del cliente
+                    new Thread(() -> {
+                        try {
+                            handleClient(clientSocket, conn);
+                        } catch (IOException e) {
+                            System.out.println("Error al manejar el cliente: " + e.getMessage());
+                        } finally {
+                            try {
+                                clientSocket.close();
+                            } catch (IOException e) {
+                                System.out.println("Error cerrando el socket del cliente: " + e.getMessage());
+                            }
+                            System.out.println("Cliente desconectado. Esperando nuevas conexiones...");
+                        }
+                    }).start(); // Inicia el hilo
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         } catch (SQLException | IOException ex) {
             ex.printStackTrace();
@@ -69,7 +77,6 @@ public class Server {
                 e.printStackTrace();
             }
         }
-
     }
 
     // ------ MÉTODOS AUXILIARES  (MANEJO BASE DATOS) ------
@@ -254,7 +261,7 @@ public class Server {
     }
 
     // Regresa string toda la información de un pedido (CRUD -> R)
-    public static String inquireRequestInformation(Connection conn, int serviceId) {
+    public static String grabRequestInformation(Connection conn, int serviceId) {
 
         String result = "";
 
@@ -423,12 +430,8 @@ public class Server {
     // TODO: Función para procesar entrada de cliente y devolver salida
     private static String processInput(String input, Connection conn) {
         // Lógica para procesar el input
-        System.out.println(input);
         String[] tokens = input.split(" "); // Se divide el contenido de la entrada para que la primera palabra del comando y el resto sean argumentos.
         String command = tokens[0].toLowerCase();
-        for (int i = 0; i < tokens.length; i++) {
-            System.out.println(tokens[i]);
-        }
 
         switch (command) {
             case "showservices":
@@ -440,7 +443,14 @@ public class Server {
                     requestHash.put("name", tokens[2]);
                     return processServiceRequest(conn, requestHash) + "\nEND";
                 } else {
-                    return (String) grabServiceInformation(conn, Integer.parseInt((tokens[1]))).get("response") + "\nEND";
+                    return "El número de servicio ingresado no existe. Por favor vuelva a intentar.\nEND";
+                }
+            case "getrequeststate":
+                // Verificar existencia del número de servicio que ingresa el usuario
+                if (verifyRequestExistence(conn, Integer.parseInt(tokens[1]))) {
+                    return grabRequestInformation(conn, Integer.parseInt(tokens[1])) + "\nEND";
+                } else {
+                    return "El número de pedido ingresado no existe. Por favor vuelva a intentar.\nEND";
                 }
             case "exit":
                 return "Desconectando...";

@@ -39,49 +39,51 @@ public class Client {
                 System.out.println(option);
 
                 switch (option) {
-                    case "1":
-                        // Solicitar String con los servicios al servidor
+                    case "1": // Mostrar los servicios que ofrece la guardería
+                        // Asignar userInput a comando
                         userInput = "showservices";
 
-                        // Pasar userInput a servidor
+                        // Solicitar servicios al servidor
                         out.println(userInput);
 
                         // Mostrar servicios en consola
                         printServerResponse(in, responseLine);
                         break;
-                    case "2":
-                        // Solicitar String con los servicios al servidor
+                    case "2": // Crear pedido nuevo
+                        // Asignar userInput a comando
                         userInput = "showservices";
 
-                        // Pasar userInput a servidor
+                        // Solicitar servicios al servidor
                         out.println(userInput);
 
                         // Mostrar servicios en consola
                         printServerResponse(in, responseLine);
 
-                        // TODO: Pedir a usuario selección de un servicio
-                        int serviceInt = 0;
-                        String serviceId = "";
+                        // Pedir a usuario selección de un servicio
+                        String serviceId;
+                        int serviceInt = -1;
 
                         do {
 
                             System.out.println("Por favor seleccione el servicio que desea tomar (1 - 3): ");
-                            serviceId = scanner.nextLine(); // No hay necesidad de pasar a int para enviar a servidor
+                            serviceId = scanner.nextLine();
 
                             try {
-                                serviceInt = Integer.parseInt(serviceId);
+                                serviceInt = Integer.parseInt(serviceId); // Intenta convertir la entrada a entero
 
                                 if (serviceInt < 1 || serviceInt > 3) {
                                     System.out.println("Debe ingresar un valor entre 1 y 3.");
                                 }
-                            } catch (ClassCastException ex) {
-                                ex.printStackTrace();
+
+                            } catch (NumberFormatException ex) { // Captura excepción si la entrada no es un número
+                                System.out.println("Debe ingresar un número válido.");
                             }
+
 
                         } while (serviceInt < 1 || serviceInt > 3);
 
                         // Pedir a usuario nombre del cliente
-                        System.out.println("Por favor ingrese el nombre mascota: ");
+                        System.out.println("Por favor ingrese el nombre de la mascota: ");
 
                         String userName = scanner.nextLine();
 
@@ -95,7 +97,33 @@ public class Client {
                         printServerResponse(in, responseLine);
                         break;
                     case "3": // Ver estado de pedido
+                        // Solicitar id del pedido
+                        int idProducto = -1;
+
+                        do {
+                            System.out.println("Por favor ingrese el ID del pedido:");
+
+                            String input = scanner.nextLine();
+
+                            try {
+                                idProducto = Integer.parseInt(input);
+                            } catch (NumberFormatException e) {
+                                System.out.println("El valor ingresado no es un ID válido. Inténtelo de nuevo.");
+                            }
+
+                        } while (idProducto < 0); // Continúa hasta que se ingrese un entero no negativo
+
+                        // TODO: Asignar userInput a comando
+                        userInput = "getrequeststate " + idProducto;
+
+                        // TODO: Pedir estado del pedido al servidor
+                        out.println(userInput);
+
+                        // TODO: Mostrar estado del pedido con id correspondiente o error
+                        printServerResponse(in, responseLine);
                         break;
+                    case "6" :
+                        System.exit(0);
                     default:
                         System.out.println("Opción no válida, intente nuevamente.");
                         userInput = "";
