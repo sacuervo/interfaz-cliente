@@ -40,6 +40,10 @@ public class Server {
 
             // Iniciar el servidor en el puerto 9999
             serverSocket = new ServerSocket(9999);
+
+            // Configurar tiempo de espera para operaciones en socket del servidor
+            serverSocket.setSoTimeout(30000);
+
             System.out.println("Servidor iniciado y esperando conexiones...");
 
             while (true) {
@@ -130,7 +134,6 @@ public class Server {
 
     // Regresa string con todos los servicios de la veterinaria (CRUD -> R)
     public static String inquireAllServicesInformation(Connection conn) {
-
         String result = "";
 
         try {
@@ -160,7 +163,7 @@ public class Server {
     }
 
     // Regresa HashMap<String, Object> con la información de un servicio seleccionado
-    public static HashMap<String, Object> grabServiceInformation(Connection conn, int id){
+    public static HashMap<String, Object> grabServiceInformation(Connection conn, int id) {
 
         HashMap<String, Object> result = new HashMap<>();
 
@@ -209,7 +212,7 @@ public class Server {
 
             addServiceEntry.setString(1, (String) serviceRequest.get("name"));
             addServiceEntry.setString(2, (String) serviceRequest.get("service"));
-            addServiceEntry.setInt(3, Integer.parseInt((String) serviceRequest.get("price")));
+            addServiceEntry.setInt(3, (Integer) serviceRequest.get("price"));
 
             addServiceEntry.executeUpdate();
 
@@ -287,9 +290,9 @@ public class Server {
     }
 
     // Regresa ArrayList<String> con la información de todos los pedidos (CRUD -> R)
-    public static ArrayList<String> inquireAllRequestsInformation(Connection conn) {
+    public static String inquireAllRequestsInformation(Connection conn) {
 
-        ArrayList<String> resultArray = new ArrayList<>();
+        String result = "";
 
         try {
             PreparedStatement retrieveAllEntries = conn.prepareStatement("SELECT * FROM PEDIDOS");
@@ -298,24 +301,21 @@ public class Server {
 
             while (rs.next()) {
 
-                String result = "";
-
                 int id = rs.getInt("ID");
                 String name = rs.getString("NOMBRE_CLIENTE");
                 String service = rs.getString("SERVICIO");
                 String price = rs.getString("PRECIO");
                 String isComplete = (rs.getInt("FINALIZADO")) == 1 ? "Completo" : "En proceso";
 
-                result = "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + price + "\nEstado: " + isComplete + "\n--------------------";
+                result += "\n--- Servicio # " + id + " ---\nNombre: " + name + "\nServicio: " + service + "\nPrecio: $" + price + "\nEstado: " + isComplete + "\n--------------------\n";
 
-                resultArray.add(result);
 
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
 
-        return resultArray;
+        return result;
 
     }
 
@@ -432,16 +432,16 @@ public class Server {
 
         switch (command) {
             case "showservices":
-                return inquireAllServicesInformation(conn);
+                return inquireAllServicesInformation(conn) + "\nEND";
             case "storeservice":
                 // Verificar existencia del número de servicio que ingresa el usuario
-                if (verifyServiceExistence(conn, Integer.parseInt(tokens[1]))){
+                if (verifyServiceExistence(conn, Integer.parseInt(tokens[1]))) {
                     HashMap<String, Object> requestHash = grabServiceInformation(conn, Integer.parseInt(tokens[1]));
                     requestHash.put("name", tokens[2]);
-                    processServiceRequest(conn, requestHash);
+                    return processServiceRequest(conn, requestHash) + "\nEND";
                 } else {
-                    return (String) grabServiceInformation(conn, Integer.parseInt((tokens[1]))).get("response");
-                };
+                    return (String) grabServiceInformation(conn, Integer.parseInt((tokens[1]))).get("response") + "\nEND";
+                }
             case "exit":
                 return "Desconectando...";
             default:

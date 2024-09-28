@@ -33,18 +33,27 @@ public class Client {
                 System.out.println("3. Ver estado de pedido");
                 System.out.println("4. Finalizar pedido");
                 System.out.println("5. Eliminar pedido");
+                System.out.println("6. Salir");
                 System.out.print("Seleccione una opción: ");
                 option = scanner.nextLine();
                 System.out.println(option);
 
                 switch (option) {
                     case "1":
-                        userInput = option;
-                        break;
-                    case "2":
-                        // Solicitar String con los servicios al servidor (mostrarservicios)
+                        // Solicitar String con los servicios al servidor
                         userInput = "showservices";
 
+                        // Pasar userInput a servidor
+                        out.println(userInput);
+
+                        // Mostrar servicios en consola
+                        printServerResponse(in, responseLine);
+                        break;
+                    case "2":
+                        // Solicitar String con los servicios al servidor
+                        userInput = "showservices";
+
+                        // Pasar userInput a servidor
                         out.println(userInput);
 
                         // Mostrar servicios en consola
@@ -71,26 +80,21 @@ public class Client {
 
                         } while (serviceInt < 1 || serviceInt > 3);
 
-                        // TODO: Pedir a usuario nombre del cliente
-                        System.out.println("Por favor ingrese el nombre del cliente: ");
+                        // Pedir a usuario nombre del cliente
+                        System.out.println("Por favor ingrese el nombre mascota: ");
 
                         String userName = scanner.nextLine();
 
-                        // TODO: Mandar a servidor selección de servicio (seleccionservicio)
-                        userInput = "storeservice " + serviceId + " " + "userName";
+                        // Mandar a servidor selección de servicio (seleccionservicio)
+                        userInput = "storeservice " + serviceId + " " + userName;
 
-                        // TODO: Mandar a servidor servicio seleccionado y nombre de usuario
+                        // Mandar a servidor servicio seleccionado y nombre de usuario
                         out.println(userInput);
 
-                        // TODO: Mostrar respuesta del servidor
+                        // Mostrar respuesta del servidor
                         printServerResponse(in, responseLine);
                         break;
-                    case "3":
-                        System.out.print("Ingrese la cadena a convertir a minúsculas: ");
-                        userInput = "lowercase " + scanner.nextLine();
-                        break;
-                    case "4":
-                        userInput = "exit";
+                    case "3": // Ver estado de pedido
                         break;
                     default:
                         System.out.println("Opción no válida, intente nuevamente.");
@@ -136,8 +140,6 @@ public class Client {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-
-        System.out.println("END");
 
     }
 }
