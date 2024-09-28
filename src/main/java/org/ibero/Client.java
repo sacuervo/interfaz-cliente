@@ -149,7 +149,32 @@ public class Client {
                         // Mostrar actualización estado del pedido con id correspondiente o error
                         printServerResponse(in, responseLine);
                         break;
+                    case "5": // Eliminar pedido
+                        // Solicitar id del pedido
+                        idProducto = -1;
 
+                        do {
+                            System.out.println("Por favor ingrese el ID del pedido:");
+
+                            String input = scanner.nextLine();
+
+                            try {
+                                idProducto = Integer.parseInt(input);
+                            } catch (NumberFormatException e) {
+                                System.out.println("El valor ingresado no es un ID válido. Inténtelo de nuevo.");
+                            }
+
+                        } while (idProducto < 0); // Continúa hasta que se ingrese un entero no negativo
+
+                        // Asignar userInput a comando
+                        userInput = "deleterequest " + idProducto;
+
+                        // Mandar a servidor id de pedido
+                        out.println(userInput);
+
+                        // Mostrar actualización estado del pedido con id correspondiente o error
+                        printServerResponse(in, responseLine);
+                        break;
                     case "6" :
                         System.exit(0);
                     default:
@@ -178,9 +203,7 @@ public class Client {
         }
     }
 
-
     // Imprimir respuesta con saltos de línea. Mientras que el contenedor no sea nulo o almacene el código estandar "END", significa que hay contenido en la respuesta por leer
-    // TODO: Arreglar método, atrapado en bucle infinito
     static void printServerResponse(BufferedReader in, String responseLine) {
 
         try {

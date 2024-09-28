@@ -306,7 +306,9 @@ public class Server {
     }
 
     // Elimina el pedido que corresponda al id especificado (CRUD -> D)
-    public static void deleteRequestEntry(Connection conn, int id) {
+    public static String deleteRequestEntry(Connection conn, int id) {
+
+        String result = "";
 
         if (verifyRequestExistence(conn, id)) {
             try {
@@ -317,7 +319,7 @@ public class Server {
 
                 deletionQuery.executeUpdate();
 
-                System.out.println("\nEliminación de pedido '" + id + "' exitosa.");
+                result = "\nEliminación de pedido '" + id + "' exitosa.";
 
             } catch (SQLException ex) {
                 ex.printStackTrace();
@@ -325,6 +327,8 @@ public class Server {
         } else {
             System.out.println("\nNo se ha encontrado el servicio. Por favor vuelva a intentar.");
         }
+
+        return result;
     }
 
     // Verificar existencia de pedido (CRUD -> R)
@@ -433,8 +437,13 @@ public class Server {
                 }
             case "endrequest":
                 if (verifyRequestExistence(conn, Integer.parseInt(tokens[1]))) {
-                    // TODO:
-                     return processRequestFinalization(conn, Integer.parseInt(tokens[1])) + "\nEND";
+                    return processRequestFinalization(conn, Integer.parseInt(tokens[1])) + "\nEND";
+                } else {
+                    return "El número de pedido ingresado no existe. Por favor vuelva a intentar.\nEND";
+                }
+            case "deleterequest":
+                if (verifyRequestExistence(conn, Integer.parseInt(tokens[1]))) {
+                    return (deleteRequestEntry(conn, Integer.parseInt(tokens[1]))) + "\nEND";
                 } else {
                     return "El número de pedido ingresado no existe. Por favor vuelva a intentar.\nEND";
                 }
