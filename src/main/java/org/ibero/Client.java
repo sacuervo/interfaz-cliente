@@ -24,6 +24,7 @@ public class Client {
             String userInput = ""; // Esta variable va a almacenar la cadena con el comando y los argumentos que se le envían en forma de cadena al servidor, y que este último debe ejecutar.
             String option; // Contiene la opción del menú que el usuario selecciona
             String responseLine = ""; // Funciona como un contenedor de la línea actual de la respuesta
+            int idProducto = -1; // Usado como input del usuarido
 
             do {
                 // Mostrar menú
@@ -98,7 +99,7 @@ public class Client {
                         break;
                     case "3": // Ver estado de pedido
                         // Solicitar id del pedido
-                        int idProducto = -1;
+                        idProducto = -1;
 
                         do {
                             System.out.println("Por favor ingrese el ID del pedido:");
@@ -113,15 +114,42 @@ public class Client {
 
                         } while (idProducto < 0); // Continúa hasta que se ingrese un entero no negativo
 
-                        // TODO: Asignar userInput a comando
+                        // Asignar userInput a comando
                         userInput = "getrequeststate " + idProducto;
 
-                        // TODO: Pedir estado del pedido al servidor
+                        // Pedir estado del pedido al servidor
                         out.println(userInput);
 
-                        // TODO: Mostrar estado del pedido con id correspondiente o error
+                        // Mostrar estado del pedido con id correspondiente o error
                         printServerResponse(in, responseLine);
                         break;
+                    case "4": // Finalizar pedido
+                        // Solicitar id del pedido
+                        idProducto = -1;
+
+                        do {
+                            System.out.println("Por favor ingrese el ID del pedido:");
+
+                            String input = scanner.nextLine();
+
+                            try {
+                                idProducto = Integer.parseInt(input);
+                            } catch (NumberFormatException e) {
+                                System.out.println("El valor ingresado no es un ID válido. Inténtelo de nuevo.");
+                            }
+
+                        } while (idProducto < 0); // Continúa hasta que se ingrese un entero no negativo
+
+                        // Asignar userInput a comando
+                        userInput = "endrequest " + idProducto;
+
+                        // Mandar a servidor id de pedido
+                        out.println(userInput);
+
+                        // Mostrar actualización estado del pedido con id correspondiente o error
+                        printServerResponse(in, responseLine);
+                        break;
+
                     case "6" :
                         System.exit(0);
                     default:
@@ -129,13 +157,7 @@ public class Client {
                         userInput = "";
                         break;
                 }
-//                if (!userInput.isEmpty()) {
-//                    // Enviar el mensaje al servidor
-//                    out.println(userInput);
-//                    // Leer la respuesta del servidor
-//                    System.out.println("Respuesta del servidor: " + in.readLine());
-//                }
-            } while (!"4".equals(option));
+            } while (!"6".equals(option));
 
             System.out.println("Desconectado del servidor.");
         } catch (UnknownHostException e) {

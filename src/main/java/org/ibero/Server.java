@@ -1,17 +1,4 @@
-package org.ibero;/* TODO:
-    1. Base de datos:
-        - Agregar menú de servicios -> createServiceList() local,  initServiceMenu() db
-        - Crear tabla para almacenar pedidos de clientes
-        - Implementar adición de pedido en función independiente
-        - Implementar finalización de pedido en función independiente
-    2. Cliente:
-        - Crear menú principal
-        - Mandar mensajes al servidor según las opciones que se seleccionen
-        - Imprimir mensaje según respuesta que se reciba del servidor
-    3. Servidor:
-        - Atar cada mensaje del cliente a una operación con el servidor
-        - Dar formato a respuestas del servidor por medio de funciones independientes para enviar respuestas al cliente
- */
+package org.ibero;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -199,18 +186,6 @@ public class Server {
         return result;
     }
 
-    // TODO: (REMOVE) Procesa la información que recibe por parte del cliente para crear un HashMap con la información del servicio
-    public static HashMap<String, Object> receiveServiceRequest(ArrayList<String> serviceInfo) {
-
-        HashMap<String, Object> serviceRequestHash = new HashMap<>();
-
-        serviceRequestHash.put("name", serviceInfo.get(0));
-        serviceRequestHash.put("service", serviceInfo.get(1));
-        serviceRequestHash.put("price", serviceInfo.get(2));
-
-        return serviceRequestHash;
-    }
-
     // Procesa el HashMap con la información del pedido del cliente y la pasa a la base de datos. Regresa el id del pedido para poder buscarlo después. (CRUD -> C)
     public static String processServiceRequest(Connection conn, HashMap<String, Object> serviceRequest) {
         int id = 0;
@@ -237,7 +212,9 @@ public class Server {
     }
 
     // Procesa el servicio con el id propocionado en la base de datos y cambia el valor de FINALIZADO por 1 (proporcional a TRUE en SQLite) (CRUD -> U)
-    public static void processRequestFinalization(Connection conn, int serviceId) {
+    public static String processRequestFinalization(Connection conn, int serviceId) {
+
+        String result = "";
 
         if (verifyRequestExistence(conn, serviceId)) { // Verificar existencia del servicio antes
             try {
@@ -249,14 +226,16 @@ public class Server {
 
                 finalizeRequest.executeUpdate();
 
-                System.out.println("\nServicio actualizado exitosamente.");
+                result = "\nEstado de servicio actualizado exitosamente.";
 
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
         } else {
-            System.out.println("\nNo se ha encontrado el servicio. Por favor vuelva a intentar.");
+            result = "\nNo se ha encontrado el servicio. Por favor vuelva a intentar.";
         }
+
+        return result;
 
     }
 
@@ -427,7 +406,7 @@ public class Server {
         }
     }
 
-    // TODO: Función para procesar entrada de cliente y devolver salida
+    // Función para procesar entrada de cliente y devolver salida
     private static String processInput(String input, Connection conn) {
         // Lógica para procesar el input
         String[] tokens = input.split(" "); // Se divide el contenido de la entrada para que la primera palabra del comando y el resto sean argumentos.
@@ -449,6 +428,13 @@ public class Server {
                 // Verificar existencia del número de servicio que ingresa el usuario
                 if (verifyRequestExistence(conn, Integer.parseInt(tokens[1]))) {
                     return grabRequestInformation(conn, Integer.parseInt(tokens[1])) + "\nEND";
+                } else {
+                    return "El número de pedido ingresado no existe. Por favor vuelva a intentar.\nEND";
+                }
+            case "endrequest":
+                if (verifyRequestExistence(conn, Integer.parseInt(tokens[1]))) {
+                    // TODO:
+                     return processRequestFinalization(conn, Integer.parseInt(tokens[1])) + "\nEND";
                 } else {
                     return "El número de pedido ingresado no existe. Por favor vuelva a intentar.\nEND";
                 }
