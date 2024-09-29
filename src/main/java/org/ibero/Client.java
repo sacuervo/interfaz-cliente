@@ -1,218 +1,188 @@
 package org.ibero;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
 
 public class Client {
+
+    private static Socket socket = null;
+    private static PrintWriter out = null;
+    private static BufferedReader in = null;
+
     public static void main(String[] args) {
-        Socket socket = null;
-        PrintWriter out = null;
-        BufferedReader in = null;
-        Scanner scanner = new Scanner(System.in);
-
         try {
-            // Conectar al servidor en la dirección localhost y el puerto 9999
+            // Conectar al servidor
             socket = new Socket("localhost", 9999);
-            System.out.println("Conectado al servidor.");
-
-            // Flujo de salida para enviar mensajes al servidor
             out = new PrintWriter(socket.getOutputStream(), true);
-            // Flujo de entrada para recibir mensajes del servidor
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            String userInput = ""; // Esta variable va a almacenar la cadena con el comando y los argumentos que se le envían en forma de cadena al servidor, y que este último debe ejecutar.
-            String option; // Contiene la opción del menú que el usuario selecciona
-            String responseLine = ""; // Funciona como un contenedor de la línea actual de la respuesta
-            int idProducto = -1; // Usado como input del usuarido
+            // Crear la interfaz gráfica
+            JFrame frame = new JFrame("Menú IberoPet");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(400, 300);
+            frame.setLayout(new BorderLayout());
 
-            do {
-                // Mostrar menú
-                System.out.println("\nMenú IberoPet: ");
-                System.out.println("1. Ver servicios");
-                System.out.println("2. Crear pedido");
-                System.out.println("3. Ver estado de pedido");
-                System.out.println("4. Finalizar pedido");
-                System.out.println("5. Eliminar pedido");
-                System.out.println("6. Salir");
-                System.out.print("Seleccione una opción: ");
-                option = scanner.nextLine();
-                System.out.println(option);
+            // Crear radio buttons para las opciones del menú
+            JRadioButton option1 = new JRadioButton("Ver servicios");
+            JRadioButton option2 = new JRadioButton("Crear pedido");
+            JRadioButton option3 = new JRadioButton("Ver estado de pedido");
+            JRadioButton option4 = new JRadioButton("Finalizar pedido");
+            JRadioButton option5 = new JRadioButton("Eliminar pedido");
+            ButtonGroup group = new ButtonGroup();
+            group.add(option1);
+            group.add(option2);
+            group.add(option3);
+            group.add(option4);
+            group.add(option5);
 
-                switch (option) {
-                    case "1": // Mostrar los servicios que ofrece la guardería
-                        // Asignar userInput a comando
-                        userInput = "showservices";
+            // Crear botones
+            JButton selectButton = new JButton("Seleccionar");
+            JButton exitButton = new JButton("Salir");
 
-                        // Solicitar servicios al servidor
-                        out.println(userInput);
+            // Panel para agregar las opciones
+            JPanel optionPanel = new JPanel();
+            optionPanel.setLayout(new GridLayout(6, 1));
+            optionPanel.add(option1);
+            optionPanel.add(option2);
+            optionPanel.add(option3);
+            optionPanel.add(option4);
+            optionPanel.add(option5);
 
-                        // Mostrar servicios en consola
-                        printServerResponse(in, responseLine);
-                        break;
-                    case "2": // Crear pedido nuevo
-                        // Asignar userInput a comando
-                        userInput = "showservices";
+            // Panel para agregar los botones de selección
+            JPanel buttonPanel = new JPanel();
+            buttonPanel.setLayout(new GridLayout(1, 2));
+            buttonPanel.add(selectButton);
+            buttonPanel.add(exitButton);
 
-                        // Solicitar servicios al servidor
-                        out.println(userInput);
+            // Añadir paneles al frame en posiciones adecuadas
+            frame.add(optionPanel, BorderLayout.CENTER);
+            frame.add(buttonPanel, BorderLayout.SOUTH);
 
-                        // Mostrar servicios en consola
-                        printServerResponse(in, responseLine);
+            frame.setVisible(true);
 
-                        // Pedir a usuario selección de un servicio
-                        String serviceId;
-                        int serviceInt = -1;
+            // Vincular acciones al botón seleccionar
+            selectButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    if (option1.isSelected()) {
+                        enviarComando("showservices");
+                    } else if (option2.isSelected()) {
+                        // Llamar al nuevo método para almacenar la respuesta
+                        String servicesResponse = almacenarStringRespuesta("showservices");
+                        String serviceId = null;
+
+                        // Validar la entrada del servicio
+                        boolean validService = false;
 
                         do {
+                            serviceId = JOptionPane.showInputDialog("Seleccione el número del servicio que desea crear (1-3):\n" + servicesResponse);
 
-                            System.out.println("Por favor seleccione el servicio que desea tomar (1 - 3): ");
-                            serviceId = scanner.nextLine();
+                            // Si el usuario presiona Cancel, se sale al menú principal
+                            if (serviceId == null) {
+                                return; // Regresar al menú principal
+                            }
 
-                            try {
-                                serviceInt = Integer.parseInt(serviceId); // Intenta convertir la entrada a entero
-
-                                if (serviceInt < 1 || serviceInt > 3) {
-                                    System.out.println("Debe ingresar un valor entre 1 y 3.");
+                            if (!serviceId.trim().isEmpty()) {
+                                try {
+                                    int serviceNumber = Integer.parseInt(serviceId);
+                                    if (serviceNumber < 1 || serviceNumber > 3) {
+                                        JOptionPane.showMessageDialog(null, "Por favor, ingrese un número válido entre 1 y 3.");
+                                    } else {
+                                        // Pedir el nombre de la mascota
+                                        String nombreMascota = JOptionPane.showInputDialog("Por favor ingrese el nombre de la mascota:");
+                                        if (nombreMascota != null && !nombreMascota.trim().isEmpty()) {
+                                            enviarComando("storeservice " + serviceId + " " + nombreMascota);
+                                            validService = true; // Verdadero si todo es correcto
+                                        } else {
+                                            JOptionPane.showMessageDialog(null, "El nombre de la mascota no puede estar vacío.");
+                                        }
+                                    }
+                                } catch (NumberFormatException ex) {
+                                    JOptionPane.showMessageDialog(null, "Entrada inválida. Debe ingresar un número entero.");
                                 }
-
-                            } catch (NumberFormatException ex) { // Captura excepción si la entrada no es un número
-                                System.out.println("Debe ingresar un número válido.");
+                            } else {
+                                JOptionPane.showMessageDialog(null, "Debe ingresar un número.");
                             }
+                        } while (!validService); // Repetir hasta que un servicio válido haya sido seleccionado
+                        } else if (option3.isSelected()) {
+                        int id = solicitarIdPedido();
+                        enviarComando("getrequeststate " + id);
+                    } else if (option4.isSelected()) {
+                        int id = solicitarIdPedido();
 
-
-                        } while (serviceInt < 1 || serviceInt > 3);
-
-                        // Pedir a usuario nombre del cliente
-                        System.out.println("Por favor ingrese el nombre de la mascota: ");
-
-                        String userName = scanner.nextLine();
-
-                        // Mandar a servidor selección de servicio (seleccionservicio)
-                        userInput = "storeservice " + serviceId + " " + userName;
-
-                        // Mandar a servidor servicio seleccionado y nombre de usuario
-                        out.println(userInput);
-
-                        // Mostrar respuesta del servidor
-                        printServerResponse(in, responseLine);
-                        break;
-                    case "3": // Ver estado de pedido
-                        // Solicitar id del pedido
-                        idProducto = -1;
-
-                        do {
-                            System.out.println("Por favor ingrese el ID del pedido:");
-
-                            String input = scanner.nextLine();
-
-                            try {
-                                idProducto = Integer.parseInt(input);
-                            } catch (NumberFormatException e) {
-                                System.out.println("El valor ingresado no es un ID válido. Inténtelo de nuevo.");
-                            }
-
-                        } while (idProducto < 0); // Continúa hasta que se ingrese un entero no negativo
-
-                        // Asignar userInput a comando
-                        userInput = "getrequeststate " + idProducto;
-
-                        // Pedir estado del pedido al servidor
-                        out.println(userInput);
-
-                        // Mostrar estado del pedido con id correspondiente o error
-                        printServerResponse(in, responseLine);
-                        break;
-                    case "4": // Finalizar pedido
-                        // Solicitar id del pedido
-                        idProducto = -1;
-
-                        do {
-                            System.out.println("Por favor ingrese el ID del pedido:");
-
-                            String input = scanner.nextLine();
-
-                            try {
-                                idProducto = Integer.parseInt(input);
-                            } catch (NumberFormatException e) {
-                                System.out.println("El valor ingresado no es un ID válido. Inténtelo de nuevo.");
-                            }
-
-                        } while (idProducto < 0); // Continúa hasta que se ingrese un entero no negativo
-
-                        // Asignar userInput a comando
-                        userInput = "endrequest " + idProducto;
-
-                        // Mandar a servidor id de pedido
-                        out.println(userInput);
-
-                        // Mostrar actualización estado del pedido con id correspondiente o error
-                        printServerResponse(in, responseLine);
-                        break;
-                    case "5": // Eliminar pedido
-                        // Solicitar id del pedido
-                        idProducto = -1;
-
-                        do {
-                            System.out.println("Por favor ingrese el ID del pedido:");
-
-                            String input = scanner.nextLine();
-
-                            try {
-                                idProducto = Integer.parseInt(input);
-                            } catch (NumberFormatException e) {
-                                System.out.println("El valor ingresado no es un ID válido. Inténtelo de nuevo.");
-                            }
-
-                        } while (idProducto < 0); // Continúa hasta que se ingrese un entero no negativo
-
-                        // Asignar userInput a comando
-                        userInput = "deleterequest " + idProducto;
-
-                        // Mandar a servidor id de pedido
-                        out.println(userInput);
-
-                        // Mostrar actualización estado del pedido con id correspondiente o error
-                        printServerResponse(in, responseLine);
-                        break;
-                    case "6" :
-                        System.exit(0);
-                    default:
-                        System.out.println("Opción no válida, intente nuevamente.");
-                        userInput = "";
-                        break;
+                        enviarComando("endrequest " + id);
+                    } else if (option5.isSelected()) {
+                        int id = solicitarIdPedido();
+                        enviarComando("deleterequest " + id);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Seleccione una opción.");
+                    }
                 }
-            } while (!"6".equals(option));
+            });
 
-            System.out.println("Desconectado del servidor.");
-        } catch (UnknownHostException e) {
-            System.err.println("No se pudo conectar al host especificado.");
-            e.printStackTrace();
+            // Acción para el botón de salir
+            exitButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    System.exit(0);
+                }
+            });
+
         } catch (IOException e) {
-            System.err.println("Error de E/S al conectar con el servidor.");
+            JOptionPane.showMessageDialog(null, "Error al conectar con el servidor.");
             e.printStackTrace();
-        } finally {
-            // Cerrar recursos
-            try {
-                if (out != null) out.close();
-                if (in != null) in.close();
-                if (socket != null) socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
-    // Imprimir respuesta con saltos de línea. Mientras que el contenedor no sea nulo o almacene el código estandar "END", significa que hay contenido en la respuesta por leer
-    static void printServerResponse(BufferedReader in, String responseLine) {
-
+    // Método para enviar el comando al servidor y mostrar la respuesta
+    private static String enviarComando(String comando) {
         try {
+            out.println(comando);
+            String responseLine;
+            StringBuilder response = new StringBuilder();
             while ((responseLine = in.readLine()) != null && !responseLine.equals("END")) {
-                System.out.println(responseLine);
+                response.append(responseLine).append("\n"); // Cambiar \\n por \n
             }
+            String result = response.toString();
+            JOptionPane.showMessageDialog(null, result);
+            return result; // Devolver la respuesta para uso posterior
         } catch (IOException ex) {
             ex.printStackTrace();
+            return null; // Devolver null en caso de error
         }
+    }
 
+    // Nuevo método para almacenar la respuesta sin mostrar la ventana
+    private static String almacenarStringRespuesta(String comando) {
+        try {
+            out.println(comando);
+            String responseLine;
+            StringBuilder response = new StringBuilder();
+            while ((responseLine = in.readLine()) != null && !responseLine.equals("END")) {
+                response.append(responseLine).append("\n");
+            }
+            return response.toString(); // Solo devolver la respuesta
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null; // Devolver null en caso de error
+        }
+    }
+
+    // Método para solicitar el ID del pedido al usuario
+    private static int solicitarIdPedido() {
+        int idProducto = -1;
+        do {
+            try {
+                idProducto = Integer.parseInt(JOptionPane.showInputDialog("Introduzca el ID del pedido:"));
+                if (idProducto < 0) {
+                    JOptionPane.showMessageDialog(null, "ID inválido. Intente de nuevo.");
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Entrada inválida. Debe ingresar un número entero.");
+            }
+        } while (idProducto < 0);
+        return idProducto;
     }
 }
